@@ -63,7 +63,8 @@ namespace AspAPIs
 
             app.UseHttpsRedirection();
             app.UseMvc();
-            app.UseCors("AllowSpecificOrigin"); 
+            app.UseCors("AllowAnyOrigin"); 
+            app.UseStaticFiles();  //support js, css, images
         }
     }
 }
