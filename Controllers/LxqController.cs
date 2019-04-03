@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 // using AspAPIs.Models;
 using Newtonsoft.Json.Linq;
@@ -45,23 +46,33 @@ namespace AspAPIs.Controllers
         [EnableCors("AllowAnyOrigin")] 
         public string Post([FromBody] string value)
         {
-            this._logger.LogInformation("ppoooost");
             try
             {
-                Console.WriteLine(value);
                 var jObj = JObject.Parse(value);
-                Console.WriteLine(jObj["UserName"]);
+                if (jObj[ApiProtocol.Field_CmdType] == null)
+                {
+                    return GenerateErrorPackString(Error.Invalid_pack, "");
+                }
+
+                return GenerateErrorPackString(Error.Invalid_Cmd, "");
             }
             catch(Exception ex)
             {
-                
+                return GenerateErrorPackString(Error.Invalid_pack, "", ex.Message);
             }
-
-            // return value;
-            return "hello";
         }
 
-
+        private string GenerateErrorPackString(Error error, string reqCmd, string errMsg = "")
+        {
+            var dic = new Dictionary<string, string>();
+            dic[ApiProtocol.Field_CmdType] = ApiProtocol.CmdType_httpresp;
+            dic[ApiProtocol.Field_HttpResp] = reqCmd;
+            dic[ApiProtocol.Field_Result] = ApiProtocol.Result_Error;
+            dic[ApiProtocol.Field_ErrCode] =  ((Int32)error).ToString();
+            dic[ApiProtocol.Field_ErrMsg] =  string.IsNullOrEmpty(errMsg) ? Errors.GetErrorMsg(error) : errMsg;
+            string jsonStr = JsonConvert.SerializeObject(dic); 
+            return jsonStr; 
+        }
         
     }
 }
