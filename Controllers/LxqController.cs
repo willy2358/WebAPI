@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 // using AspAPIs.Models;
-// using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace AspAPIs.Controllers
 {
@@ -46,16 +46,16 @@ namespace AspAPIs.Controllers
         public string Post([FromBody] string value)
         {
             this._logger.LogInformation("ppoooost");
-            // try
-            // {
-            //     Console.WriteLine(value);
-            //     var jObj = JObject.Parse(value);
-            //     Console.WriteLine(jObj["UserName"]);
-            // }
-            // catch(Exception ex)
-            // {
+            try
+            {
+                Console.WriteLine(value);
+                var jObj = JObject.Parse(value);
+                Console.WriteLine(jObj["UserName"]);
+            }
+            catch(Exception ex)
+            {
                 
-            // }
+            }
 
             // return value;
             return "hello";
