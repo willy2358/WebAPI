@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.IO;
 
 // using AspAPIs.Models;
 using Newtonsoft.Json.Linq;
@@ -51,15 +52,50 @@ namespace AspAPIs.Controllers
                 var jObj = JObject.Parse(value);
                 if (jObj[ApiProtocol.Field_CmdType] == null)
                 {
-                    return GenerateErrorPackString(Error.Invalid_pack, "");
+                    return GenerateErrorPackString(Error.no_cmdtype);
                 }
 
-                return GenerateErrorPackString(Error.Invalid_Cmd, "");
+                var reqCmd = jObj[ApiProtocol.CmdType_httpreq]?.ToString();
+                if (string.IsNullOrEmpty(reqCmd))
+                {
+                    return GenerateErrorPackString(Error.invalid_httpreq);
+                }
+                
+                return ProcessHttpRequest(jObj, reqCmd);
             }
             catch(Exception ex)
             {
-                return GenerateErrorPackString(Error.Invalid_pack, "", ex.Message);
+                return GenerateErrorPackString(Error.invalid_pack, "", ex.Message);
             }
+        }
+
+        private string ProcessHttpRequest(JObject jObj, string httpReqCmd)
+        {
+            if (httpReqCmd == ApiProtocol.req_getgames)
+            {
+                var gameConfFile = System.IO.Path.Combine(AppContext.BaseDirectory, "games.json");
+                JArray jGames = null;
+                if (System.IO.File.Exists(gameConfFile))
+                {
+                    string gTexts = System.IO.File.ReadAllText(gameConfFile);
+                    jGames = JArray.Parse(gTexts);
+                }
+                return GenerateSuccessRespPack(httpReqCmd, "games", jGames);
+            }
+
+            return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
+        }
+
+
+        private string GenerateErrorPackString(Error error, string errMsg = "")
+        {
+            var dic = new Dictionary<string, string>();
+            dic[ApiProtocol.Field_CmdType] = ApiProtocol.CmdType_httpresp;
+            dic[ApiProtocol.Field_Result] = ApiProtocol.Result_Error;
+            dic[ApiProtocol.Field_ErrCode] =  ((Int32)error).ToString();
+            dic[ApiProtocol.Field_ErrMsg] =  string.IsNullOrEmpty(errMsg) ? Errors.GetErrorMsg(error) : errMsg;
+            string jsonStr = JsonConvert.SerializeObject(dic); 
+            return jsonStr; 
         }
 
         private string GenerateErrorPackString(Error error, string reqCmd, string errMsg = "")

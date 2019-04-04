@@ -4,8 +4,16 @@ public enum Error
 {
     undefined = -1,
     OK = 0,
-    Invalid_pack,
-    Invalid_Cmd,
+
+    no_cmdtype,
+    invalid_pack,
+    invalid_cmd,
+    invalid_httpreq,
+
+    unsupported_cmd,
+
+    
+
 
 }
 
@@ -16,8 +24,10 @@ public class Errors
         switch(error)
         {
             case Error.OK: return "OK";
-            case Error.Invalid_pack: return "invalid message package";
-            case Error.Invalid_Cmd: return "Invalid command";
+            case Error.no_cmdtype: return "lacking the cmdtype field";
+            case Error.invalid_pack: return "invalid message package";
+            case Error.invalid_cmd: return "invalid command";
+            case Error.invalid_httpreq: return "invalid httpreq command";
             default : return "undefinded error";
         }
     }
