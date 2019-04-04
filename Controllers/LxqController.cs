@@ -73,6 +73,42 @@ namespace AspAPIs.Controllers
             string jsonStr = JsonConvert.SerializeObject(dic); 
             return jsonStr; 
         }
+
+        private string GenerateSuccessRespPack(string reqCmd)
+        {
+            var dic = new Dictionary<string, Object>();
+            dic[ApiProtocol.Field_CmdType] = ApiProtocol.CmdType_httpresp;
+            dic[ApiProtocol.Field_HttpResp] = reqCmd;
+            dic[ApiProtocol.Field_Result] = ApiProtocol.Result_OK;
+            string jsonStr = JsonConvert.SerializeObject(dic); 
+            return jsonStr; 
+        }
+
+        private string GenerateSuccessRespPack(string reqCmd, string extraDataName, Object extraData)
+        {
+            var dic = new Dictionary<string, Object>();
+            dic[ApiProtocol.Field_CmdType] = ApiProtocol.CmdType_httpresp;
+            dic[ApiProtocol.Field_HttpResp] = reqCmd;
+            dic[ApiProtocol.Field_Result] = ApiProtocol.Result_OK;
+            dic[ApiProtocol.Field_ResultData] = extraDataName;
+            dic[extraDataName] = extraData;
+            string jsonStr = JsonConvert.SerializeObject(dic); 
+            return jsonStr; 
+        }
+
+        private string TestGenerateRespPack()
+        {
+            var dic1 = new Dictionary<string, object>();
+            dic1.Add("Name", "wada");
+            dic1.Add("Age", 12);
+            var dic2 = new Dictionary<string, object>();
+            dic2.Add("Name", "wada1");
+            dic2.Add("Age", 123);
+            List<Dictionary<string, object>> ls = new List<Dictionary<string, object>>();
+            ls.Add(dic1);
+            ls.Add(dic2);
+            return GenerateSuccessRespPack("get-info", "extra", ls);
+        }
         
     }
 }
