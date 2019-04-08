@@ -41,7 +41,9 @@ namespace AspAPIs
             corsBuilder.AllowAnyHeader();
             corsBuilder.AllowAnyMethod();
             corsBuilder.AllowAnyOrigin();
-            corsBuilder.AllowCredentials();
+            //The CORS protocol does not allow specifying a wildcard (any) origin 
+            //and credentials at the same time. Configure the policy by listing individ
+            // corsBuilder.AllowCredentials();
 
             services.AddCors( options => {
                 options.AddPolicy("AllowAnyOrigin", corsBuilder.Build());   

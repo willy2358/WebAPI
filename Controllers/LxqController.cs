@@ -49,7 +49,9 @@ namespace AspAPIs.Controllers
         {
             try
             {
+                this._logger.LogInformation("received post:" + value);
                 var jObj = JObject.Parse(value);
+                this._logger.LogInformation(jObj[ApiProtocol.Field_CmdType].ToString());
                 if (jObj[ApiProtocol.Field_CmdType] == null)
                 {
                     return GenerateErrorPackString(Error.no_cmdtype);
