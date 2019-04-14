@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +27,13 @@ namespace AspAPIs
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc(
+                options =>
+                {
+                    options.SslPort = 44321;
+                    options.Filters.Add(new RequireHttpsAttribute());
+                }
+            ).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             // services.AddCors( options => {
             //     options.AddPolicy("AllowSpecificOrigin", builder => 
             //     { 
@@ -36,6 +43,16 @@ namespace AspAPIs
             //         "http://localhost:8080", "https://localhost:8080"); 
             //     }); 
             // });
+            services.AddAntiforgery(
+                options =>
+                {
+                    options.Cookie.Name = "_af";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                    options.HeaderName = "X-XSRF-TOKEN";
+                }
+            );
+
             // TODO 需设置合适的CORS策略
             var corsBuilder = new CorsPolicyBuilder();
             corsBuilder.AllowAnyHeader();
