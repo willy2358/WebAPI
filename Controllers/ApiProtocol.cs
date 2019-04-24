@@ -5,6 +5,7 @@ class ApiProtocol
     public const string Field_ErrCode = "errcode";
 
     public const string Field_ErrMsg = "errmsg";
+    public const string Field_Pwd = "password";
     public const string Field_Result = "result";
 
     public const string Field_User = "user";
@@ -23,5 +24,7 @@ class ApiProtocol
     public const string CmdType_httpreq = "httpreq";
     public const string CmdType_httpresp = "httpresp";
     public const string req_getgames = "get-games";
+
+    public const string req_login = "login";
 
 }

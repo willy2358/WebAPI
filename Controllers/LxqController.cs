@@ -10,6 +10,7 @@ using System.IO;
 
 // using AspAPIs.Models;
 using Newtonsoft.Json.Linq;
+using MySql.Data.MySqlClient;
 
 namespace AspAPIs.Controllers
 {
@@ -83,6 +84,31 @@ namespace AspAPIs.Controllers
                     jGames = JArray.Parse(gTexts);
                 }
                 return GenerateSuccessRespPack(httpReqCmd, "games", jGames);
+            }
+            else if (httpReqCmd == ApiProtocol.req_login)
+            {
+                string username = jObj[ApiProtocol.Field_UserName].ToString();
+                string pwd = jObj[ApiProtocol.Field_Pwd].ToString();
+                string sql = string.Format("select userid, username, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
+                MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                MySqlDataReader dr = cmd.ExecuteReader();
+                if (dr.HasRows)
+                {
+                    dr.Read();
+
+                    JObject userinfo = new JObject();
+                    userinfo["userid"] = dr["userid"].ToString();
+                    userinfo["username"] = dr["username"]?.ToString();
+                    userinfo["phone"] = dr["phone"]?.ToString();
+                    userinfo["email"] = dr["email"]?.ToString();
+                    dr.Close();
+                    return GenerateSuccessRespPack(httpReqCmd, "login", userinfo);
+                }
+                else
+                {
+                    dr.Close();
+                    return GenerateErrorPackString(Error.username_or_password_wrong, httpReqCmd);
+                }
             }
 
             return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);

@@ -2,12 +2,12 @@ using MySql.Data;
 using MySql.Data.MySqlClient;
 class Database
 {
-    private static MySqlConnection _dbConn = new MySqlConnection();
+    private static MySqlConnection _dbConn = null;
     private static string connStr = "server=localhost;user=root;database=SqlTest;port=3306;password=root";
 
     public static MySqlConnection GetDbConnection()
     {
-        if (null == Database._dbConn && Database._dbConn.State != System.Data.ConnectionState.Open)
+        if (null == Database._dbConn || Database._dbConn.State != System.Data.ConnectionState.Open)
         {
             try
             {
