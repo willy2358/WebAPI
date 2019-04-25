@@ -95,14 +95,26 @@ namespace AspAPIs.Controllers
                 if (dr.HasRows)
                 {
                     dr.Read();
+                    JObject jLogin = new JObject();
 
-                    JObject userinfo = new JObject();
-                    userinfo["userid"] = dr["userid"].ToString();
-                    userinfo["username"] = dr["username"]?.ToString();
-                    userinfo["phone"] = dr["phone"]?.ToString();
-                    userinfo["email"] = dr["email"]?.ToString();
+                    var salt = System.Guid.NewGuid().ToString();
+                    JObject jToken = new JObject();
+                    jToken["clientid"] = "00001";
+                    jToken["salt"] = salt;
+                    jToken["signature"] = CryptoHelper.SignDataToBase64Str(salt);
+                    jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
+                    jLogin["token"] = jToken;
+
+                    JObject jUserInfo = new JObject();
+                    jUserInfo["userid"] = dr["userid"].ToString();
+                    jUserInfo["username"] = dr["username"]?.ToString();
+                    jUserInfo["phone"] = dr["phone"]?.ToString();
+                    jUserInfo["email"] = dr["email"]?.ToString();
+                    jLogin["user-info"] = jUserInfo;
+
+                    var sig = CryptoHelper.SignDataToBase64Str(salt);
                     dr.Close();
-                    return GenerateSuccessRespPack(httpReqCmd, "login", userinfo);
+                    return GenerateSuccessRespPack(httpReqCmd, "login", jLogin);
                 }
                 else
                 {
@@ -113,8 +125,6 @@ namespace AspAPIs.Controllers
 
             return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
         }
-
-
         private string GenerateErrorPackString(Error error, string errMsg = "")
         {
             var dic = new Dictionary<string, string>();
