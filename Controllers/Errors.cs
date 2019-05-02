@@ -10,7 +10,7 @@ public enum Error
     invalid_cmd,
     invalid_httpreq,
 
-    username_or_password_wrong,
+    username_or_password_wrong = 618,
 
     unsupported_cmd,
 

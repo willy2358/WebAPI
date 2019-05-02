@@ -11,6 +11,7 @@ using System.IO;
 // using AspAPIs.Models;
 using Newtonsoft.Json.Linq;
 using MySql.Data.MySqlClient;
+using System.Data;
 
 namespace AspAPIs.Controllers
 {
@@ -91,10 +92,15 @@ namespace AspAPIs.Controllers
                 string pwd = jObj[ApiProtocol.Field_Pwd].ToString();
                 string sql = string.Format("select userid, username, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
                 MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
-                MySqlDataReader dr = cmd.ExecuteReader();
-                if (dr.HasRows)
+                // MySqlDataReader dr = cmd.ExecuteReader();
+                
+                MySqlDataAdapter adapter = new MySqlDataAdapter();
+                adapter.SelectCommand = cmd;
+                DataSet ds = new DataSet();
+                adapter.Fill(ds);
+                if (ds.Tables.Count >= 0 && ds.Tables[0].Rows.Count > 0)
                 {
-                    dr.Read();
+                    UInt32 userid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
                     JObject jLogin = new JObject();
 
                     var salt = System.Guid.NewGuid().ToString();
@@ -106,19 +112,18 @@ namespace AspAPIs.Controllers
                     jLogin["token"] = jToken;
 
                     JObject jUserInfo = new JObject();
-                    jUserInfo["userid"] = dr["userid"].ToString();
-                    jUserInfo["username"] = dr["username"]?.ToString();
-                    jUserInfo["phone"] = dr["phone"]?.ToString();
-                    jUserInfo["email"] = dr["email"]?.ToString();
+                    jUserInfo["userid"] = userid.ToString();
+                    jUserInfo["username"] = ds.Tables[0].Rows[0]["username"]?.ToString();
+                    jUserInfo["phone"] = ds.Tables[0].Rows[0]["phone"]?.ToString();
+                    jUserInfo["email"] = ds.Tables[0].Rows[0]["email"]?.ToString();
+                    jUserInfo["stuffs"] = QueryUserStuffs(userid);
                     jLogin["user-info"] = jUserInfo;
 
                     var sig = CryptoHelper.SignDataToBase64Str(salt);
-                    dr.Close();
                     return GenerateSuccessRespPack(httpReqCmd, "login", jLogin);
                 }
                 else
                 {
-                    dr.Close();
                     return GenerateErrorPackString(Error.username_or_password_wrong, httpReqCmd);
                 }
             }
@@ -182,6 +187,41 @@ namespace AspAPIs.Controllers
             ls.Add(dic1);
             ls.Add(dic2);
             return GenerateSuccessRespPack("get-info", "extra", ls);
+        }
+
+        private JArray QueryUserStuffs(UInt32 userid)
+        {
+            try
+            {
+                string sql = string.Format(@"select b.stuffid, b.stuffname, a.amount from user_stuff  as a, stuff as b
+                                            where a.userid = {0}
+                                            and a.stuffid = b.stuffid;", userid);
+                MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                MySqlDataAdapter adapter = new MySqlDataAdapter();
+                adapter.SelectCommand = cmd;
+                DataSet ds = new DataSet();
+                adapter.Fill(ds);
+                if (ds.Tables == null || ds.Tables.Count < 1 || null == ds.Tables[0].Rows || ds.Tables[0].Rows.Count < 1)
+                {
+                    return null;
+                }
+
+                JArray arr = new JArray();
+                foreach (DataRow row in ds.Tables[0].Rows)
+                {
+                    JObject jObj = new JObject();
+                    jObj["stuffid"] = Convert.ToUInt16(row["stuffid"]);
+                    jObj["name"] = row["stuffname"].ToString();
+                    jObj["amount"] = Convert.ToUInt64(row["amount"]);
+                    arr.Add(jObj);
+                }
+
+                return arr;
+            }
+            catch(Exception)
+            {
+                return null;
+            }
         }
         
     }
