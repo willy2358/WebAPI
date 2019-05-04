@@ -27,6 +27,7 @@ namespace AspAPIs.Controllers
     [ApiController]
     public class LxqController : ControllerBase
     {
+        private static string ServiceRootPath = "https://127.0.0.1:44321";
          private readonly ILogger _logger;
          public LxqController(ILogger<LxqController> logger)
          {
@@ -90,7 +91,7 @@ namespace AspAPIs.Controllers
             {
                 string username = jObj[ApiProtocol.Field_UserName].ToString();
                 string pwd = jObj[ApiProtocol.Field_Pwd].ToString();
-                string sql = string.Format("select userid, username, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
+                string sql = string.Format("select userid, username, image, alias, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
                 MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
                 // MySqlDataReader dr = cmd.ExecuteReader();
                 
@@ -111,11 +112,14 @@ namespace AspAPIs.Controllers
                     jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
                     jLogin["token"] = jToken;
 
+                    var img = ds.Tables[0].Rows[0]["image"]?.ToString();
                     JObject jUserInfo = new JObject();
                     jUserInfo["userid"] = userid.ToString();
+                    jUserInfo["alias"] = ds.Tables[0].Rows[0]["alias"]?.ToString();
                     jUserInfo["username"] = ds.Tables[0].Rows[0]["username"]?.ToString();
                     jUserInfo["phone"] = ds.Tables[0].Rows[0]["phone"]?.ToString();
                     jUserInfo["email"] = ds.Tables[0].Rows[0]["email"]?.ToString();
+                    jUserInfo["image"] = string.IsNullOrEmpty(img)? "" : System.IO.Path.Combine(ServiceRootPath, img.ToString());
                     jUserInfo["stuffs"] = QueryUserStuffs(userid);
                     jLogin["user-info"] = jUserInfo;
 
