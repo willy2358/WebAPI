@@ -78,7 +78,63 @@ namespace AspAPIs.Controllers
         {
             if (httpReqCmd == ApiProtocol.req_getgames)
             {
-                var gameConfFile = System.IO.Path.Combine(AppContext.BaseDirectory, "games.json");
+                return ProcessGetGames(httpReqCmd);
+            }
+            else if (httpReqCmd == ApiProtocol.req_login)
+            {
+                return ProcessLogin(jObj, httpReqCmd);
+            }
+
+            return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
+        }
+
+        private string ProcessLogin(JObject jObj, string httpReqCmd)
+        {
+            string username = jObj[ApiProtocol.Field_UserName].ToString();
+            string pwd = jObj[ApiProtocol.Field_Pwd].ToString();
+            string sql = string.Format("select userid, username, image, alias, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
+            MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+            // MySqlDataReader dr = cmd.ExecuteReader();
+            
+            MySqlDataAdapter adapter = new MySqlDataAdapter();
+            adapter.SelectCommand = cmd;
+            DataSet ds = new DataSet();
+            adapter.Fill(ds);
+            if (ds.Tables.Count >= 0 && ds.Tables[0].Rows.Count > 0)
+            {
+                UInt32 userid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
+                JObject jLogin = new JObject();
+
+                var salt = System.Guid.NewGuid().ToString();
+                JObject jToken = new JObject();
+                jToken["clientid"] = "00001";
+                jToken["salt"] = salt;
+                jToken["signature"] = CryptoHelper.SignDataToBase64Str(salt);
+                jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
+                jLogin["token"] = jToken;
+
+                var img = ds.Tables[0].Rows[0]["image"]?.ToString();
+                JObject jUserInfo = new JObject();
+                jUserInfo["userid"] = userid.ToString();
+                jUserInfo["alias"] = ds.Tables[0].Rows[0]["alias"]?.ToString();
+                jUserInfo["username"] = ds.Tables[0].Rows[0]["username"]?.ToString();
+                jUserInfo["phone"] = ds.Tables[0].Rows[0]["phone"]?.ToString();
+                jUserInfo["email"] = ds.Tables[0].Rows[0]["email"]?.ToString();
+                jUserInfo["image"] = string.IsNullOrEmpty(img)? "" : System.IO.Path.Combine(ServiceRootPath, img.ToString());
+                jUserInfo["stuffs"] = QueryUserStuffs(userid);
+                jLogin["user-info"] = jUserInfo;
+
+                var sig = CryptoHelper.SignDataToBase64Str(salt);
+                return GenerateSuccessRespPack(httpReqCmd, "login", jLogin);
+            }
+            else
+            {
+                return GenerateErrorPackString(Error.username_or_password_wrong, httpReqCmd);
+            }
+        }
+        private string ProcessGetGames(string httpReqCmd)
+        {
+               var gameConfFile = System.IO.Path.Combine(AppContext.BaseDirectory, "games.json");
                 JArray jGames = null;
                 if (System.IO.File.Exists(gameConfFile))
                 {
@@ -86,54 +142,8 @@ namespace AspAPIs.Controllers
                     jGames = JArray.Parse(gTexts);
                 }
                 return GenerateSuccessRespPack(httpReqCmd, "games", jGames);
-            }
-            else if (httpReqCmd == ApiProtocol.req_login)
-            {
-                string username = jObj[ApiProtocol.Field_UserName].ToString();
-                string pwd = jObj[ApiProtocol.Field_Pwd].ToString();
-                string sql = string.Format("select userid, username, image, alias, phone, email from user where password='{0}' and (username='{1}' or email='{1}' or phone='{1}')", pwd, username);
-                MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
-                // MySqlDataReader dr = cmd.ExecuteReader();
-                
-                MySqlDataAdapter adapter = new MySqlDataAdapter();
-                adapter.SelectCommand = cmd;
-                DataSet ds = new DataSet();
-                adapter.Fill(ds);
-                if (ds.Tables.Count >= 0 && ds.Tables[0].Rows.Count > 0)
-                {
-                    UInt32 userid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
-                    JObject jLogin = new JObject();
-
-                    var salt = System.Guid.NewGuid().ToString();
-                    JObject jToken = new JObject();
-                    jToken["clientid"] = "00001";
-                    jToken["salt"] = salt;
-                    jToken["signature"] = CryptoHelper.SignDataToBase64Str(salt);
-                    jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
-                    jLogin["token"] = jToken;
-
-                    var img = ds.Tables[0].Rows[0]["image"]?.ToString();
-                    JObject jUserInfo = new JObject();
-                    jUserInfo["userid"] = userid.ToString();
-                    jUserInfo["alias"] = ds.Tables[0].Rows[0]["alias"]?.ToString();
-                    jUserInfo["username"] = ds.Tables[0].Rows[0]["username"]?.ToString();
-                    jUserInfo["phone"] = ds.Tables[0].Rows[0]["phone"]?.ToString();
-                    jUserInfo["email"] = ds.Tables[0].Rows[0]["email"]?.ToString();
-                    jUserInfo["image"] = string.IsNullOrEmpty(img)? "" : System.IO.Path.Combine(ServiceRootPath, img.ToString());
-                    jUserInfo["stuffs"] = QueryUserStuffs(userid);
-                    jLogin["user-info"] = jUserInfo;
-
-                    var sig = CryptoHelper.SignDataToBase64Str(salt);
-                    return GenerateSuccessRespPack(httpReqCmd, "login", jLogin);
-                }
-                else
-                {
-                    return GenerateErrorPackString(Error.username_or_password_wrong, httpReqCmd);
-                }
-            }
-
-            return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
         }
+
         private string GenerateErrorPackString(Error error, string errMsg = "")
         {
             var dic = new Dictionary<string, string>();
