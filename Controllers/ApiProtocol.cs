@@ -12,11 +12,20 @@ class ApiProtocol
     public const string Field_UserId = "userid";
 
     public const string Field_UserName = "username";
-    public const string Field_GameId = "gameid";
 
+    public const string Field_FeeStuffId = "fee-stuffid";
+    public const string Field_FeeChargeType = "fee_charge_type";
+    public const string Field_GameId = "gameid";
     public const string Field_HttpResp = "httpresp";
 
     public const string Field_ResultData = "result-data";
+
+    public const string Field_RoundNum = "round-num";
+    public const string Field_Room_Visible_Type = "visible_type";
+
+    public const string Field_Stake_StuffId = "stake-stuffid";
+    public const string Field_Stake_Base_Num = "stake-base-num";
+    
 
     public const string Result_OK = "OK";
     public const string Result_Error = "ERROR";
