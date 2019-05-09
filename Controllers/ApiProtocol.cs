@@ -26,5 +26,6 @@ class ApiProtocol
     public const string req_getgames = "get-games";
 
     public const string req_login = "login";
+    public const string req_newroom = "new-room";
 
 }

@@ -84,8 +84,47 @@ namespace AspAPIs.Controllers
             {
                 return ProcessLogin(jObj, httpReqCmd);
             }
+            else if (httpReqCmd == ApiProtocol.req_newroom)
+            {
+                return ProcessCreateRoom(jObj);
+            }
 
             return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
+        }
+
+        private string ProcessCreateRoom(JObject jObj)
+        {
+            string userid = jObj[ApiProtocol.Field_UserId].ToString();
+            string gameid = jObj[ApiProtocol.Field_GameId].ToString();
+            Int32 roomid = GetNextRoomId(false);
+            string rounds = jObj[ApiProtocol.Field_RoundNum].ToString();
+            string room_fee_stuffid = jObj[ApiProtocol.Field_FeeStuffId].ToString();
+            string stake_stuffid = jObj[ApiProtocol.Field_Stake_StuffId].ToString();
+            string stake_base_num = jObj[ApiProtocol.Field_Stake_Base_Num].ToString();
+            string fee_charge_type = jObj[ApiProtocol.Field_FeeChargeType].ToString();
+            string room_vis_type = jObj[ApiProtocol.Field_Room_Visible_Type].ToString();
+
+            string sql = "insert into room(room_no,userid,gameid,round_num,ex_ip_cheat,ex_gps_cheat,fee_stuff_id,stake_stuff_id,"
+                         +$"stake_base_score,fee_charge_type,visible_type) "
+                         +$" values({roomid},{userid},{gameid},{rounds},0, 0, {room_fee_stuffid},{stake_stuffid},{stake_base_num},{fee_charge_type},{room_vis_type})";
+            
+            MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+            cmd.ExecuteNonQuery();
+
+            return GenerateSuccessRespPack(ApiProtocol.req_newroom);
+        }
+
+        private Int32 GetNextRoomId(bool isVip = false)
+        {
+            var procName = isVip? "next_vip_roomid":"next_roomid";
+            MySqlCommand mysqlCommand = new MySqlCommand(procName, Database.GetDbConnection());
+            mysqlCommand.CommandType = CommandType.StoredProcedure;
+            MySqlParameter out_roomid = new MySqlParameter("?p_out",MySqlDbType.Int32);
+            mysqlCommand.Parameters.Add(out_roomid);
+            out_roomid.Direction = ParameterDirection.Output;
+            mysqlCommand.ExecuteNonQuery();
+            Int32 roomid = Convert.ToInt32(out_roomid.Value);
+            return roomid;
         }
 
         private string ProcessLogin(JObject jObj, string httpReqCmd)
