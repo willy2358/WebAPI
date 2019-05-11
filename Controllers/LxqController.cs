@@ -76,55 +76,114 @@ namespace AspAPIs.Controllers
 
         private string ProcessHttpRequest(JObject jObj, string httpReqCmd)
         {
-            if (httpReqCmd == ApiProtocol.req_getgames)
+            try
             {
-                return ProcessGetGames(httpReqCmd);
-            }
-            else if (httpReqCmd == ApiProtocol.req_login)
-            {
-                return ProcessLogin(jObj, httpReqCmd);
-            }
-            else if (httpReqCmd == ApiProtocol.req_newroom)
-            {
-                return ProcessCreateRoom(jObj);
-            }
+                if (httpReqCmd == ApiProtocol.req_getgames)
+                {
+                    return ProcessGetGames(httpReqCmd);
+                }
+                else if (httpReqCmd == ApiProtocol.req_login)
+                {
+                    return ProcessLogin(jObj, httpReqCmd);
+                }
+                else if (httpReqCmd == ApiProtocol.req_newroom)
+                {
+                    return ProcessCreateRoom(jObj);
+                }
+                else if (httpReqCmd == ApiProtocol.req_new_viproom)
+                {
+                    return ProcessCreateVipRoom(jObj);
+                }
 
-            return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
+                return GenerateErrorPackString(Error.invalid_cmd, httpReqCmd);
+            }
+            catch(Exception ex)
+            {
+                return GenerateErrorPackString(Error.httpserver_inner_error, httpReqCmd, ex.Message);
+            }
+        }
+
+        private string ProcessCreateVipRoom(JObject jObj)
+        {
+            try
+            {
+                Int32 roomid = GetNextRoomId(true);
+                if (roomid < 1000)
+                {
+                    return GenerateErrorPackString(Error.rooms_used_up, ApiProtocol.req_new_viproom);
+                }
+                int table_limits = 1;
+                string userid = jObj[ApiProtocol.Field_UserId].ToString();
+                string room_vis_type = jObj[ApiProtocol.Field_Room_Visible_Type].ToString();
+
+                string sql = "insert into room_vip(room_no,userid,tables_limit, visible_type, expired) "
+                            +$" values({roomid},{userid},{table_limits},{room_vis_type},0)";
+                
+                MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                cmd.ExecuteNonQuery();
+
+                return GenerateSuccessRespPack(ApiProtocol.req_new_viproom);
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
         }
 
         private string ProcessCreateRoom(JObject jObj)
         {
-            string userid = jObj[ApiProtocol.Field_UserId].ToString();
-            string gameid = jObj[ApiProtocol.Field_GameId].ToString();
-            Int32 roomid = GetNextRoomId(false);
-            string rounds = jObj[ApiProtocol.Field_RoundNum].ToString();
-            string room_fee_stuffid = jObj[ApiProtocol.Field_FeeStuffId].ToString();
-            string stake_stuffid = jObj[ApiProtocol.Field_Stake_StuffId].ToString();
-            string stake_base_num = jObj[ApiProtocol.Field_Stake_Base_Num].ToString();
-            string fee_charge_type = jObj[ApiProtocol.Field_FeeChargeType].ToString();
-            string room_vis_type = jObj[ApiProtocol.Field_Room_Visible_Type].ToString();
+            try
+            {
+                Int32 roomid = GetNextRoomId(false);
+                if (roomid < 1000)
+                {
+                    return GenerateErrorPackString(Error.rooms_used_up, ApiProtocol.req_newroom);
+                }
 
-            string sql = "insert into room(room_no,userid,gameid,round_num,ex_ip_cheat,ex_gps_cheat,fee_stuff_id,stake_stuff_id,"
-                         +$"stake_base_score,fee_charge_type,visible_type) "
-                         +$" values({roomid},{userid},{gameid},{rounds},0, 0, {room_fee_stuffid},{stake_stuffid},{stake_base_num},{fee_charge_type},{room_vis_type})";
-            
-            MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
-            cmd.ExecuteNonQuery();
+                string userid = jObj[ApiProtocol.Field_UserId].ToString();
+                string gameid = jObj[ApiProtocol.Field_GameId].ToString();
+                string rounds = jObj[ApiProtocol.Field_RoundNum].ToString();
+                string room_fee_stuffid = jObj[ApiProtocol.Field_FeeStuffId].ToString();
+                string stake_stuffid = jObj[ApiProtocol.Field_Stake_StuffId].ToString();
+                string stake_base_num = jObj[ApiProtocol.Field_Stake_Base_Num].ToString();
+                string fee_charge_type = jObj[ApiProtocol.Field_FeeChargeType].ToString();
+                string room_vis_type = jObj[ApiProtocol.Field_Room_Visible_Type].ToString();
 
-            return GenerateSuccessRespPack(ApiProtocol.req_newroom);
+                string sql = "insert into room(room_no,userid,gameid,round_num,ex_ip_cheat,ex_gps_cheat,fee_stuff_id,stake_stuff_id,"
+                            +$"stake_base_score,fee_charge_type,visible_type) "
+                            +$" values({roomid},{userid},{gameid},{rounds},0, 0, {room_fee_stuffid},{stake_stuffid},{stake_base_num},{fee_charge_type},{room_vis_type})";
+                
+                MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                cmd.ExecuteNonQuery();
+
+                return GenerateSuccessRespPack(ApiProtocol.req_newroom);
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
         }
 
+        //ToDo support out isUsedUp
         private Int32 GetNextRoomId(bool isVip = false)
         {
-            var procName = isVip? "next_vip_roomid":"next_roomid";
-            MySqlCommand mysqlCommand = new MySqlCommand(procName, Database.GetDbConnection());
-            mysqlCommand.CommandType = CommandType.StoredProcedure;
-            MySqlParameter out_roomid = new MySqlParameter("?p_out",MySqlDbType.Int32);
-            mysqlCommand.Parameters.Add(out_roomid);
-            out_roomid.Direction = ParameterDirection.Output;
-            mysqlCommand.ExecuteNonQuery();
-            Int32 roomid = Convert.ToInt32(out_roomid.Value);
-            return roomid;
+            try
+            {
+                var procName = isVip? "next_vip_roomid":"next_roomid";
+                MySqlCommand mysqlCommand = new MySqlCommand(procName, Database.GetDbConnection());
+                mysqlCommand.CommandType = CommandType.StoredProcedure;
+                MySqlParameter out_roomid = new MySqlParameter("@p_out",MySqlDbType.Int32);
+                mysqlCommand.Parameters.Add(out_roomid);
+                out_roomid.Direction = ParameterDirection.Output;
+                mysqlCommand.ExecuteNonQuery();
+                Int32 roomid = Convert.ToInt32(out_roomid.Value);
+                return roomid;
+            }
+            catch(MySqlException ex)
+            {
+                throw ex;
+            }
+ 
         }
 
         private string ProcessLogin(JObject jObj, string httpReqCmd)
