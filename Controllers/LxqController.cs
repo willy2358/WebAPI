@@ -28,6 +28,7 @@ namespace AspAPIs.Controllers
     public class LxqController : ControllerBase
     {
         private static string ServiceRootPath = "https://127.0.0.1:44321";
+        private static string clientid = "00001";
          private readonly ILogger _logger;
          public LxqController(ILogger<LxqController> logger)
          {
@@ -121,8 +122,11 @@ namespace AspAPIs.Controllers
                 
                 MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
                 cmd.ExecuteNonQuery();
-
-                return GenerateSuccessRespPack(ApiProtocol.req_new_viproom);
+                var room = "room";
+                JObject jRoomInfo = new JObject();
+                jRoomInfo["roomid"] = roomid;
+                jRoomInfo["roomtoken"] = CreateSessionToken();
+                return GenerateSuccessRespPack(ApiProtocol.req_newroom, room, jRoomInfo);
             }
             catch(Exception ex)
             {
@@ -156,7 +160,11 @@ namespace AspAPIs.Controllers
                 MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
                 cmd.ExecuteNonQuery();
 
-                return GenerateSuccessRespPack(ApiProtocol.req_newroom);
+                var room = "room";
+                JObject jRoomInfo = new JObject();
+                jRoomInfo["roomid"] = roomid;
+                jRoomInfo["roomtoken"] = CreateSessionToken();
+                return GenerateSuccessRespPack(ApiProtocol.req_newroom, room, jRoomInfo);
             }
             catch(Exception ex)
             {
@@ -203,13 +211,7 @@ namespace AspAPIs.Controllers
                 UInt32 userid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
                 JObject jLogin = new JObject();
 
-                var salt = System.Guid.NewGuid().ToString();
-                JObject jToken = new JObject();
-                jToken["clientid"] = "00001";
-                jToken["salt"] = salt;
-                jToken["signature"] = CryptoHelper.SignDataToBase64Str(salt);
-                jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
-                jLogin["token"] = jToken;
+                jLogin["token"] =  CreateSessionToken();
 
                 var img = ds.Tables[0].Rows[0]["image"]?.ToString();
                 JObject jUserInfo = new JObject();
@@ -222,13 +224,24 @@ namespace AspAPIs.Controllers
                 jUserInfo["stuffs"] = QueryUserStuffs(userid);
                 jLogin["user-info"] = jUserInfo;
 
-                var sig = CryptoHelper.SignDataToBase64Str(salt);
+                // var sig = CryptoHelper.SignDataToBase64Str(salt);
                 return GenerateSuccessRespPack(httpReqCmd, "login", jLogin);
             }
             else
             {
                 return GenerateErrorPackString(Error.username_or_password_wrong, httpReqCmd);
             }
+        }
+
+        private JObject CreateSessionToken()
+        {
+            var salt = System.Guid.NewGuid().ToString();
+            JObject jToken = new JObject();
+            jToken["clientid"] = clientid;
+            jToken["salt"] = salt;
+            jToken["signature"] = CryptoHelper.SignDataToBase64Str(salt);
+            jToken["expire"] = DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss");
+            return jToken;
         }
         private string ProcessGetGames(string httpReqCmd)
         {
