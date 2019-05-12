@@ -166,6 +166,7 @@ namespace AspAPIs.Controllers
                 var room = "room";
                 JObject jRoomInfo = new JObject();
                 jRoomInfo["roomid"] = roomid;
+                jRoomInfo["gameid"] = gameid;
                 jRoomInfo["roomtype"] = room_type_one_table;  
                 jRoomInfo["roomtoken"] = CreateSessionToken();
                 return GenerateSuccessRespPack(ApiProtocol.req_newroom, room, jRoomInfo);
