@@ -29,6 +29,8 @@ namespace AspAPIs.Controllers
     {
         private static string ServiceRootPath = "https://127.0.0.1:44321";
         private static string clientid = "00001";
+        private const int room_type_one_table = 1;
+        private const int room_type_multi_table = 2;
          private readonly ILogger _logger;
          public LxqController(ILogger<LxqController> logger)
          {
@@ -125,6 +127,7 @@ namespace AspAPIs.Controllers
                 var room = "room";
                 JObject jRoomInfo = new JObject();
                 jRoomInfo["roomid"] = roomid;
+                jRoomInfo["roomtype"] = room_type_multi_table; 
                 jRoomInfo["roomtoken"] = CreateSessionToken();
                 return GenerateSuccessRespPack(ApiProtocol.req_newroom, room, jRoomInfo);
             }
@@ -163,6 +166,7 @@ namespace AspAPIs.Controllers
                 var room = "room";
                 JObject jRoomInfo = new JObject();
                 jRoomInfo["roomid"] = roomid;
+                jRoomInfo["roomtype"] = room_type_one_table;  
                 jRoomInfo["roomtoken"] = CreateSessionToken();
                 return GenerateSuccessRespPack(ApiProtocol.req_newroom, room, jRoomInfo);
             }
