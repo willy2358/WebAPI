@@ -23,6 +23,8 @@ class ApiProtocol
     public const string Field_RoundNum = "round-num";
     public const string Field_Room_Visible_Type = "visible-type";
 
+    public const string Field_RoomId = "roomid";
+
     public const string Field_Stake_StuffId = "stake-stuffid";
     public const string Field_Stake_Base_Num = "stake-base-num";
     
@@ -33,6 +35,7 @@ class ApiProtocol
     public const string CmdType_httpreq = "httpreq";
     public const string CmdType_httpresp = "httpresp";
     public const string req_getgames = "get-games";
+    public const string req_get_roominfo = "get-roominfo";
 
     public const string req_login = "login";
     public const string req_newroom = "new-room";

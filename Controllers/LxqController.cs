@@ -85,6 +85,10 @@ namespace AspAPIs.Controllers
                 {
                     return ProcessGetGames(httpReqCmd);
                 }
+                else if (httpReqCmd == ApiProtocol.req_get_roominfo)
+                {
+                    return ProcessGetRoomInfo(jObj);
+                }
                 else if (httpReqCmd == ApiProtocol.req_login)
                 {
                     return ProcessLogin(jObj, httpReqCmd);
@@ -196,7 +200,6 @@ namespace AspAPIs.Controllers
             {
                 throw ex;
             }
- 
         }
 
         private string ProcessLogin(JObject jObj, string httpReqCmd)
@@ -259,6 +262,74 @@ namespace AspAPIs.Controllers
                 }
                 return GenerateSuccessRespPack(httpReqCmd, "games", jGames);
         }
+
+        private string ProcessGetRoomInfo(JObject jObj)
+        {
+            try
+            {
+                int roomid =  Convert.ToInt32(jObj[ApiProtocol.Field_RoomId]);
+                if (roomid < 20000)
+                {
+                    //reserved vip room
+                    string sql = $"select room_no, userid from room_vip where room_no = {roomid}";
+                    MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                    MySqlDataAdapter adapter = new MySqlDataAdapter();
+                    adapter.SelectCommand = cmd;
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds);
+                    if (ds.Tables.Count >= 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        UInt32 ownerid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
+                        JObject jRoom = new JObject();
+                        jRoom["ownerid"] = ownerid;
+                        jRoom["roomtype"] = room_type_multi_table;
+                        jRoom["roomtoken"] = CreateSessionToken();
+                        return GenerateSuccessRespPack(ApiProtocol.req_get_roominfo, "room", jRoom);
+                    }
+                    else
+                    {
+                        return GenerateErrorPackString(Error.invalid_roomid, ApiProtocol.req_get_roominfo);
+                    }
+                }
+                else
+                {
+                    //ordinary room
+                    string sql = $"select room_no, userid, gameid, round_num, fee_stuff_id, stake_stuff_id,"
+                                +$"stake_base_score,fee_charge_type from room where room_no = {roomid}";
+                    MySqlCommand cmd = new MySqlCommand(sql, Database.GetDbConnection());
+                    MySqlDataAdapter adapter = new MySqlDataAdapter();
+                    adapter.SelectCommand = cmd;
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds);
+                    if (ds.Tables.Count >= 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        UInt32 ownerid = Convert.ToUInt32(ds.Tables[0].Rows[0]["userid"]);
+                        JObject jRoom = new JObject();
+                        jRoom["ownerid"] = ownerid;
+                        jRoom["roomtype"] = room_type_one_table;
+                        jRoom["roomtoken"] = CreateSessionToken();
+                        jRoom["gameid"] = Convert.ToUInt32(ds.Tables[0].Rows[0]["gameid"]);
+                        jRoom[ApiProtocol.Field_RoundNum] = Convert.ToUInt32(ds.Tables[0].Rows[0]["round_num"]);
+                        jRoom[ApiProtocol.Field_FeeStuffId] = Convert.ToUInt32(ds.Tables[0].Rows[0]["fee_stuff_id"]);
+                        jRoom[ApiProtocol.Field_Stake_StuffId] = Convert.ToUInt32(ds.Tables[0].Rows[0]["stake_stuff_id"]);
+                        jRoom[ApiProtocol.Field_Stake_Base_Num] = Convert.ToUInt32(ds.Tables[0].Rows[0]["stake_base_score"]);
+                        jRoom[ApiProtocol.Field_FeeChargeType] = Convert.ToUInt32(ds.Tables[0].Rows[0]["fee_charge_type"]);
+                       
+                        return GenerateSuccessRespPack(ApiProtocol.req_get_roominfo, "room", jRoom);
+                    }
+                    else
+                    {
+                        return GenerateErrorPackString(Error.invalid_roomid, ApiProtocol.req_get_roominfo);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        //private string 
 
         private string GenerateErrorPackString(Error error, string errMsg = "")
         {

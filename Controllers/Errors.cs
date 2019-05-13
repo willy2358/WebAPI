@@ -13,8 +13,9 @@ public enum Error
     username_or_password_wrong = 618,
     rooms_used_up = 619,    //no available room
     httpserver_inner_error = 620, //
+    invalid_roomid = 621,
 
-    unsupported_cmd,
+    unsupported_cmd ,
 
     
 
@@ -35,6 +36,7 @@ public class Errors
             case Error.username_or_password_wrong: return "username or password is wrong";
             case Error.rooms_used_up: return "no available room";
             case Error.httpserver_inner_error: return "http server inner error";
+            case Error.invalid_roomid: return "invalid room number";
             default : return "undefinded error";
         }
     }
